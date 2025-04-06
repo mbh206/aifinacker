@@ -5,7 +5,7 @@ import {
 	selectAccounts,
 	selectCurrentAccount,
 	setCurrentAccount,
-} from '../../slices/accountsSlice';
+} from '../../store/slices/accountsSlice';
 
 interface AccountSwitcherProps {
 	onClose: () => void;

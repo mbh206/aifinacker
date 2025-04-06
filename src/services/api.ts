@@ -22,6 +22,13 @@ export interface FinancialInsightsParams extends PaginationParams {
 	category?: string;
 }
 
+interface AccountMember {
+	uid: string;
+	email: string;
+	displayName: string;
+	role: 'admin' | 'member' | 'viewer';
+}
+
 /**
  * API Service Class
  * Provides centralized methods for external API interactions
@@ -153,8 +160,13 @@ class ApiService {
 
 	// Account-related API methods
 	async getAccounts(params?: PaginationParams) {
+		const response = await this.axiosInstance.get('/accounts', { params });
+		return response.data;
+	}
+
+	async getAccount(accountId: string) {
 		try {
-			const response = await this.axiosInstance.get('/accounts', { params });
+			const response = await this.axiosInstance.get(`/accounts/${accountId}`);
 			return response.data;
 		} catch (error) {
 			throw error;
@@ -164,6 +176,51 @@ class ApiService {
 	async createAccount(accountData: any) {
 		try {
 			const response = await this.axiosInstance.post('/accounts', accountData);
+			return response.data;
+		} catch (error) {
+			throw error;
+		}
+	}
+
+	async addAccountMember(
+		accountId: string,
+		email: string,
+		role: 'admin' | 'member' | 'viewer'
+	): Promise<AccountMember> {
+		try {
+			const response = await this.axiosInstance.post(
+				`/accounts/${accountId}/members`,
+				{
+					email,
+					role,
+				}
+			);
+			return response.data;
+		} catch (error) {
+			throw error;
+		}
+	}
+
+	async removeAccountMember(accountId: string, userId: string): Promise<void> {
+		try {
+			await this.axiosInstance.delete(
+				`/accounts/${accountId}/members/${userId}`
+			);
+		} catch (error) {
+			throw error;
+		}
+	}
+
+	async updateAccountMemberRole(
+		accountId: string,
+		userId: string,
+		role: 'admin' | 'member' | 'viewer'
+	): Promise<AccountMember> {
+		try {
+			const response = await this.axiosInstance.patch(
+				`/accounts/${accountId}/members/${userId}`,
+				{ role }
+			);
 			return response.data;
 		} catch (error) {
 			throw error;
@@ -224,3 +281,21 @@ class ApiService {
 
 // Export a singleton instance of ApiService
 export const apiService = new ApiService();
+
+export const addAccountMember = (
+	accountId: string,
+	email: string,
+	role: 'admin' | 'member' | 'viewer'
+) => apiService.addAccountMember(accountId, email, role);
+
+export const removeAccountMember = (accountId: string, userId: string) =>
+	apiService.removeAccountMember(accountId, userId);
+
+export const updateAccountMemberRole = (
+	accountId: string,
+	userId: string,
+	role: 'admin' | 'member' | 'viewer'
+) => apiService.updateAccountMemberRole(accountId, userId, role);
+// At the bottom of api.ts, add:
+export const createAccount = (accountData: any) =>
+	apiService.createAccount(accountData);

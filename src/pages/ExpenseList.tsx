@@ -8,14 +8,14 @@ import {
 	selectExpensesStatus,
 	selectExpensesError,
 	deleteExpense,
-} from '../slices/expensesSlice';
-import { selectCurrentAccount } from '../slices/accountsSlice';
+} from '../store/slices/expensesSlice';
+import { selectCurrentAccount } from '../store/slices/accountsSlice';
 import {
 	setCategoryFilter,
 	setDateFilter,
 	setSearchQuery,
 	selectFilters,
-} from '../slices/uiSlice';
+} from '../store/slices/uiSlice';
 
 // Components
 import LoadingScreen from '../components/common/LoadingScreen';

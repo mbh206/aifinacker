@@ -2,16 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { RootState, AppDispatch } from '../../store';
-import { addExpense, editExpense } from '../../features/expenses/expensesSlice';
-import { addNotification } from '../../features/ui/uiSlice';
+import { RootState, AppDispatch } from '../store';
+import { addExpense, editExpense } from '../features/expenses/expensesSlice';
+import { addNotification } from '../features/ui/uiSlice';
 import {
 	getAccountCategories,
 	getSystemCategories,
 	getExchangeRates,
 	getSupportedCurrencies,
-} from '../../services/api';
-import { Expense, ExpenseCategory } from '../../models/types';
+} from '../services/api';
+import { Expense, ExpenseCategory } from '../models/types';
 
 interface ExpenseFormProps {
 	existingExpense?: Expense;

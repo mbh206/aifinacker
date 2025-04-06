@@ -8,10 +8,10 @@ import {
 	selectBudgetById,
 	selectBudgetStatus,
 	selectBudgetError,
-} from '../slices/budgetsSlice';
-import { selectExpenseCategories } from '../slices/expensesSlice';
-import { selectCurrentAccount } from '../slices/accountsSlice';
-import { showNotification } from '../slices/uiSlice';
+} from '../store/slices/budgetsSlice';
+import { selectExpenseCategories } from '../store/slices/expensesSlice';
+import { selectCurrentAccount } from '../store/slices/accountsSlice';
+import { showNotification } from '../store/slices/uiSlice';
 
 // Components
 import LoadingScreen from '../components/common/LoadingScreen';

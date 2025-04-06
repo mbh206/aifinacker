@@ -3,9 +3,9 @@ import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 
 // Import your reducers here
 import authReducer from './slices/authSlice';
-import accountReducer from './slices/accountSlice';
-import expenseReducer from './slices/expenseSlice';
-import budgetReducer from './slices/budgetSlice';
+import accountReducer from './slices/accountsSlice';
+import expenseReducer from './slices/expensesSlice';
+import budgetReducer from './slices/budgetsSlice';
 import uiReducer from './slices/uiSlice';
 
 export const store = configureStore({

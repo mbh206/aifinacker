@@ -5,13 +5,13 @@ import {
 	fetchExpenses,
 	selectAllExpenses,
 	selectExpensesStatus,
-} from '../slices/expensesSlice';
+} from '../store/slices/expensesSlice';
 import {
 	fetchBudgets,
 	selectBudgets,
 	selectBudgetStatus,
-} from '../slices/budgetsSlice';
-import { selectCurrentAccount } from '../slices/accountsSlice';
+} from '../store/slices/budgetsSlice';
+import { selectCurrentAccount } from '../store/slices/accountsSlice';
 
 // Components
 import LoadingScreen from '../components/common/LoadingScreen';
@@ -19,7 +19,7 @@ import EmptyState from '../components/common/EmptyState';
 import ExpenseChart from '../components/insights/ExpenseChart';
 import BudgetOverviewChart from '../components/insights/BudgetOverviewChart';
 import SpendingTrendsChart from '../components/insights/SpendingTrendsChart';
-import InsightCard from '../components/insights/InsightCard';
+import InsightCard from '../components/insights/InsightsCard';
 
 // Types
 import { Expense, Budget } from '../types';

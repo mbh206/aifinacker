@@ -6,14 +6,14 @@ import {
 	selectRecentExpenses,
 	selectTotalExpensesByCategory,
 	selectExpensesByMonth,
-} from '../slices/expensesSlice';
+} from '../store/slices/expensesSlice';
 import {
 	fetchBudgets,
 	selectBudgets,
 	selectBudgetStatus,
-} from '../slices/budgetsSlice';
-import { selectCurrentAccount } from '../slices/accountsSlice';
-import { selectUser } from '../slices/authSlice';
+} from '../store/slices/budgetsSlice';
+import { selectCurrentAccount } from '../store/slices/accountsSlice';
+import { selectUser } from '../store/slices/authSlice';
 
 // Components
 import LoadingScreen from '../components/common/LoadingScreen';

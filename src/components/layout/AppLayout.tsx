@@ -4,14 +4,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
 	selectCurrentAccount,
 	selectAccounts,
-} from '../../slices/accountsSlice';
-import { selectUser, logout } from '../../slices/authSlice';
+} from '../../store/slices/accountsSlice';
+import { selectUser, logout } from '../../store/slices/authSlice';
 import {
 	toggleSidebar,
 	selectIsSidebarOpen,
 	toggleDarkMode,
 	selectIsDarkMode,
-} from '../../slices/uiSlice';
+} from '../../store/slices/uiSlice';
 
 // Components
 import AccountSwitcher from '../accounts/AccountSwitcher';

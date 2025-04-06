@@ -8,15 +8,15 @@ import {
 	fetchBudgetStatus,
 	selectBudgetStatus,
 	removeBudget,
-} from '../../features/budgets/budgetsSlice';
-import { addNotification } from '../../features/ui/uiSlice';
-import { selectCurrentAccount } from '../../features/accounts/accountsSlice';
-import { RootState, AppDispatch } from '../../store';
+} from '../features/budgets/budgetsSlice';
+import { addNotification } from '../features/ui/uiSlice';
+import { selectCurrentAccount } from '../features/accounts/accountsSlice';
+import { RootState, AppDispatch } from '../store';
 
 // Components
-import LoadingScreen from '../common/LoadingScreen';
-import ConfirmDialog from '../common/ConfirmDialog';
-import BudgetProgressBar from './BudgetProgressBar';
+import LoadingScreen from '../components/common/LoadingScreen';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import BudgetProgressBar from '../components/budgets/BudgetProgressBar';
 
 // Charts
 import {
