@@ -1,19 +1,17 @@
 // src/models/types.ts
+import { User as FirebaseUser } from 'firebase/auth';
 
 // User Model
 export interface User {
-	id: string;
-	email: string;
-	displayName: string;
-	photoURL?: string;
-	createdAt: Date;
-	updatedAt: Date;
+	firebaseUser: FirebaseUser;
 	preferences: {
 		darkMode: boolean;
 		language: string;
 		currencyDisplay: string;
 		notificationSettings: NotificationSettings;
 	};
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 export interface NotificationSettings {

@@ -11,9 +11,12 @@ import {
 	selectIsAuthenticated,
 	selectUser,
 	checkAuth,
-} from './slices/authSlice';
-import { fetchAccounts, selectCurrentAccount } from './slices/accountsSlice';
-import { selectNotifications, hideNotification } from './slices/uiSlice';
+} from './store/slices/authSlice';
+import {
+	fetchAccounts,
+	selectCurrentAccount,
+} from './store/slices/accountsSlice';
+import { selectNotifications, hideNotification } from './store/slices/uiSlice';
 
 // Layouts
 import AppLayout from './components/layout/AppLayout';

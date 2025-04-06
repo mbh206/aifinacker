@@ -1,8 +1,21 @@
 // src/services/auth.ts
-import firebase from 'firebase/app';
-import 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import {
+	getAuth,
+	createUserWithEmailAndPassword,
+	signInWithEmailAndPassword,
+	GoogleAuthProvider,
+	signInWithPopup,
+	signOut as authSignOut,
+	onAuthStateChanged as firebaseOnAuthStateChanged,
+	sendPasswordResetEmail,
+	confirmPasswordReset as firebaseConfirmPasswordReset,
+	User as FirebaseUser,
+	updateProfile as firebaseUpdateProfile,
+	updateEmail as firebaseUpdateEmail,
+} from 'firebase/auth';
 import { User } from '../models/types';
-import { createUserProfile, getUserProfile } from './api';
+import { apiService } from './api';
 
 // Initialize Firebase (values would be replaced with environment variables in production)
 const firebaseConfig = {
@@ -15,11 +28,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase if it hasn't been initialized yet
-if (!firebase.apps.length) {
-	firebase.initializeApp(firebaseConfig);
-}
-
-const auth = firebase.auth();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 // Sign up with email and password
 export const signUpWithEmail = async (
@@ -28,27 +38,23 @@ export const signUpWithEmail = async (
 	displayName: string
 ): Promise<User> => {
 	try {
-		// Create the user in Firebase
-		const userCredential = await auth.createUserWithEmailAndPassword(
+		const userCredential = await createUserWithEmailAndPassword(
+			auth,
 			email,
 			password
 		);
+		const firebaseUser = userCredential.user;
 
-		if (!userCredential.user) {
+		if (!firebaseUser) {
 			throw new Error('Failed to create user');
 		}
 
-		// Update the user's profile with display name
-		await userCredential.user.updateProfile({ displayName });
+		// Update the user's display name
+		await firebaseUpdateProfile(firebaseUser, { displayName });
 
 		// Create user profile in our database
-		const newUser: Partial<User> = {
-			id: userCredential.user.uid,
-			email,
-			displayName,
-			photoURL: userCredential.user.photoURL || undefined,
-			createdAt: new Date(),
-			updatedAt: new Date(),
+		const userProfile = await apiService.createUserProfile({
+			firebaseUser,
 			preferences: {
 				darkMode: false,
 				language: 'en',
@@ -60,13 +66,11 @@ export const signUpWithEmail = async (
 					expenseReminders: true,
 				},
 			},
-		};
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
 
-		// Store the user in our database
-		await createUserProfile(newUser as User);
-
-		// Return the user object
-		return newUser as User;
+		return userProfile;
 	} catch (error) {
 		console.error('Error signing up:', error);
 		throw error;
@@ -79,7 +83,8 @@ export const signInWithEmail = async (
 	password: string
 ): Promise<User> => {
 	try {
-		const userCredential = await auth.signInWithEmailAndPassword(
+		const userCredential = await signInWithEmailAndPassword(
+			auth,
 			email,
 			password
 		);
@@ -89,7 +94,9 @@ export const signInWithEmail = async (
 		}
 
 		// Get the user profile from our database
-		const userProfile = await getUserProfile(userCredential.user.uid);
+		const userProfile = await apiService.getUserProfile(
+			userCredential.user.uid
+		);
 
 		return userProfile;
 	} catch (error) {
@@ -101,8 +108,8 @@ export const signInWithEmail = async (
 // Sign in with Google
 export const signInWithGoogle = async (): Promise<User> => {
 	try {
-		const provider = new firebase.auth.GoogleAuthProvider();
-		const userCredential = await auth.signInWithPopup(provider);
+		const provider = new GoogleAuthProvider();
+		const userCredential = await signInWithPopup(auth, provider);
 
 		if (!userCredential.user) {
 			throw new Error('Failed to sign in with Google');
@@ -110,17 +117,14 @@ export const signInWithGoogle = async (): Promise<User> => {
 
 		// Check if user already exists in our database
 		try {
-			const userProfile = await getUserProfile(userCredential.user.uid);
+			const userProfile = await apiService.getUserProfile(
+				userCredential.user.uid
+			);
 			return userProfile;
 		} catch (error) {
-			// User doesn't exist, create a new profile
-			const newUser: Partial<User> = {
-				id: userCredential.user.uid,
-				email: userCredential.user.email as string,
-				displayName: userCredential.user.displayName as string,
-				photoURL: userCredential.user.photoURL || undefined,
-				createdAt: new Date(),
-				updatedAt: new Date(),
+			// If user doesn't exist, create a new profile
+			const newUser = await apiService.createUserProfile({
+				firebaseUser: userCredential.user,
 				preferences: {
 					darkMode: false,
 					language: 'en',
@@ -132,12 +136,11 @@ export const signInWithGoogle = async (): Promise<User> => {
 						expenseReminders: true,
 					},
 				},
-			};
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
 
-			// Store the user in our database
-			await createUserProfile(newUser as User);
-
-			return newUser as User;
+			return newUser;
 		}
 	} catch (error) {
 		console.error('Error signing in with Google:', error);
@@ -148,7 +151,7 @@ export const signInWithGoogle = async (): Promise<User> => {
 // Sign out
 export const signOut = async (): Promise<void> => {
 	try {
-		await auth.signOut();
+		await authSignOut(auth);
 	} catch (error) {
 		console.error('Error signing out:', error);
 		throw error;
@@ -158,94 +161,83 @@ export const signOut = async (): Promise<void> => {
 // Get current user
 export const getCurrentUser = (): Promise<User | null> => {
 	return new Promise((resolve, reject) => {
-		const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-			unsubscribe();
-
-			if (firebaseUser) {
-				try {
-					const userProfile = await getUserProfile(firebaseUser.uid);
-					resolve(userProfile);
-				} catch (error) {
-					console.error('Error getting user profile:', error);
+		const unsubscribe = firebaseOnAuthStateChanged(
+			auth,
+			async (firebaseUser) => {
+				unsubscribe();
+				if (firebaseUser) {
+					try {
+						const userProfile = await apiService.getUserProfile(
+							firebaseUser.uid
+						);
+						resolve(userProfile);
+					} catch (error) {
+						console.error('Error getting user profile:', error);
+						reject(error);
+					}
+				} else {
 					resolve(null);
 				}
-			} else {
-				resolve(null);
 			}
-		}, reject);
+		);
 	});
 };
 
 // Reset password
 export const resetPassword = async (email: string): Promise<void> => {
 	try {
-		await auth.sendPasswordResetEmail(email);
+		await sendPasswordResetEmail(auth, email);
 	} catch (error) {
-		console.error('Error resetting password:', error);
+		console.error('Error sending password reset email:', error);
+		throw error;
+	}
+};
+
+export const confirmPasswordReset = async (
+	oobCode: string,
+	newPassword: string
+): Promise<void> => {
+	try {
+		await firebaseConfirmPasswordReset(auth, oobCode, newPassword);
+	} catch (error) {
+		console.error('Error confirming password reset:', error);
 		throw error;
 	}
 };
 
 // Update user profile
 export const updateUserProfile = async (
-	userId: string,
-	updates: Partial<User>
-): Promise<User> => {
+	user: FirebaseUser,
+	displayName: string
+): Promise<void> => {
 	try {
-		// Get current user
-		const currentUser = auth.currentUser;
-
-		if (!currentUser || currentUser.uid !== userId) {
-			throw new Error('Unauthorized');
-		}
-
-		// Update displayName in Firebase if provided
-		if (updates.displayName) {
-			await currentUser.updateProfile({ displayName: updates.displayName });
-		}
-
-		// Update email in Firebase if provided
-		if (updates.email && updates.email !== currentUser.email) {
-			await currentUser.updateEmail(updates.email);
-		}
-
-		// Update user profile in our database
-		const updatedUser = await updateUserProfileInDb(userId, {
-			...updates,
-			updatedAt: new Date(),
-		});
-
-		return updatedUser;
+		await firebaseUpdateProfile(user, { displayName });
 	} catch (error) {
 		console.error('Error updating user profile:', error);
 		throw error;
 	}
 };
 
-// Internal function to update user profile in database
-const updateUserProfileInDb = async (
-	userId: string,
-	updates: Partial<User>
-): Promise<User> => {
-	// This would be implemented in the API service
-	// For now, we're just returning a mock response
-	const currentUser = await getUserProfile(userId);
-
-	return {
-		...currentUser,
-		...updates,
-		updatedAt: new Date(),
-	};
+export const updateUserEmail = async (
+	user: FirebaseUser,
+	newEmail: string
+): Promise<void> => {
+	try {
+		await firebaseUpdateEmail(user, newEmail);
+	} catch (error) {
+		console.error('Error updating user email:', error);
+		throw error;
+	}
 };
 
 // Auth state change listener
 export const onAuthStateChanged = (
 	callback: (user: User | null) => void
 ): (() => void) => {
-	return auth.onAuthStateChanged(async (firebaseUser) => {
+	return firebaseOnAuthStateChanged(auth, async (firebaseUser) => {
 		if (firebaseUser) {
 			try {
-				const userProfile = await getUserProfile(firebaseUser.uid);
+				const userProfile = await apiService.getUserProfile(firebaseUser.uid);
 				callback(userProfile);
 			} catch (error) {
 				console.error('Error getting user profile:', error);
