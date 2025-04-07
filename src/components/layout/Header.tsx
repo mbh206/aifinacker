@@ -3,17 +3,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
-import { toggleSidebar, toggleDarkMode } from '../../features/ui/uiSlice';
-import { logoutUser } from '../../features/auth/authSlice';
-import { searchAccountExpenses } from '../../features/expenses/expensesSlice';
+import { toggleSidebar, toggleDarkMode } from '../../store/slices/uiSlice';
+import { logoutUser } from '../../store/slices/authSlice';
 
 const Header: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const { currentAccount } = useSelector((state: RootState) => state.accounts);
-	const { sidebarOpen, darkMode, isMobile } = useSelector(
-		(state: RootState) => state.ui
-	);
+	const { sidebarOpen, theme } = useSelector((state: RootState) => state.ui);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [showUserMenu, setShowUserMenu] = useState(false);
 	const userMenuRef = useRef<HTMLDivElement>(null);
@@ -37,15 +34,9 @@ const Header: React.FC = () => {
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-
 		if (!searchTerm.trim() || !currentAccount) return;
-
-		dispatch(
-			searchAccountExpenses({
-				accountId: currentAccount.id,
-				query: searchTerm,
-			})
-		);
+		// TODO: Implement search functionality
+		console.log('Searching for:', searchTerm);
 	};
 
 	const handleLogout = () => {
@@ -57,26 +48,24 @@ const Header: React.FC = () => {
 			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
 				<div className='flex justify-between h-16'>
 					<div className='flex'>
-						{/* Sidebar toggle button (visible on desktop) */}
-						{!isMobile && (
-							<button
-								onClick={() => dispatch(toggleSidebar())}
-								className='px-4 text-gray-500 dark:text-gray-400 focus:outline-none'>
-								<svg
-									xmlns='http://www.w3.org/2000/svg'
-									className='h-6 w-6'
-									fill='none'
-									viewBox='0 0 24 24'
-									stroke='currentColor'>
-									<path
-										strokeLinecap='round'
-										strokeLinejoin='round'
-										strokeWidth={2}
-										d='M4 6h16M4 12h16M4 18h16'
-									/>
-								</svg>
-							</button>
-						)}
+						{/* Sidebar toggle button */}
+						<button
+							onClick={() => dispatch(toggleSidebar())}
+							className='px-4 text-gray-500 dark:text-gray-400 focus:outline-none'>
+							<svg
+								xmlns='http://www.w3.org/2000/svg'
+								className='h-6 w-6'
+								fill='none'
+								viewBox='0 0 24 24'
+								stroke='currentColor'>
+								<path
+									strokeLinecap='round'
+									strokeLinejoin='round'
+									strokeWidth={2}
+									d='M4 6h16M4 12h16M4 18h16'
+								/>
+							</svg>
+						</button>
 
 						{/* Logo */}
 						<div className='flex-shrink-0 flex items-center'>
@@ -126,7 +115,7 @@ const Header: React.FC = () => {
 						<button
 							onClick={() => dispatch(toggleDarkMode())}
 							className='ml-3 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none'>
-							{darkMode ? (
+							{theme === 'dark' ? (
 								<svg
 									xmlns='http://www.w3.org/2000/svg'
 									className='h-6 w-6'
@@ -183,15 +172,17 @@ const Header: React.FC = () => {
 								<button
 									onClick={() => setShowUserMenu(!showUserMenu)}
 									className='flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'>
-									{user?.photoURL ? (
+									{user?.firebaseUser?.photoURL ? (
 										<img
 											className='h-8 w-8 rounded-full'
-											src={user.photoURL}
+											src={user.firebaseUser.photoURL}
 											alt='User avatar'
 										/>
 									) : (
 										<div className='h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white'>
-											{user?.displayName?.charAt(0).toUpperCase() || 'U'}
+											{user?.firebaseUser?.displayName
+												?.charAt(0)
+												.toUpperCase() || 'U'}
 										</div>
 									)}
 								</button>
@@ -202,9 +193,11 @@ const Header: React.FC = () => {
 								<div className='origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50'>
 									<div className='py-1'>
 										<div className='px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700'>
-											<p className='font-medium'>{user?.displayName}</p>
+											<p className='font-medium'>
+												{user?.firebaseUser?.displayName}
+											</p>
 											<p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-												{user?.email}
+												{user?.firebaseUser?.email}
 											</p>
 										</div>
 

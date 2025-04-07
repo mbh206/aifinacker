@@ -460,4 +460,89 @@ export const {
 	clearExpenses,
 } = expenseSlice.actions;
 
+// Selectors
+export const selectExpenses = (state: { expenses: ExpenseState }) =>
+	state.expenses.expenses;
+export const selectFilteredExpenses = (state: { expenses: ExpenseState }) =>
+	state.expenses.filteredExpenses;
+export const selectSelectedExpense = (state: { expenses: ExpenseState }) =>
+	state.expenses.selectedExpense;
+export const selectExpenseStatus = (state: { expenses: ExpenseState }) =>
+	state.expenses.status;
+export const selectExpenseError = (state: { expenses: ExpenseState }) =>
+	state.expenses.error;
+export const selectExpenseFilters = (state: { expenses: ExpenseState }) =>
+	state.expenses.filter;
+
+// Selector for expenses by month
+export const selectExpensesByMonth = (state: { expenses: ExpenseState }) => {
+	const expenses = state.expenses.expenses;
+	const expensesByMonth: { [key: string]: Expense[] } = {};
+
+	expenses.forEach((expense) => {
+		const monthKey = `${expense.date.getFullYear()}-${
+			expense.date.getMonth() + 1
+		}`;
+		if (!expensesByMonth[monthKey]) {
+			expensesByMonth[monthKey] = [];
+		}
+		expensesByMonth[monthKey].push(expense);
+	});
+
+	return expensesByMonth;
+};
+
+// Selector for recent expenses
+export const selectRecentExpenses = (
+	state: { expenses: ExpenseState },
+	limit = 5
+) => {
+	// Sort expenses by date in descending order (newest first)
+	const sortedExpenses = [...state.expenses.expenses].sort(
+		(a, b) => b.date.getTime() - a.date.getTime()
+	);
+
+	// Return the most recent expenses up to the limit
+	return sortedExpenses.slice(0, limit);
+};
+
+// Selector for total expenses by category
+export const selectTotalExpensesByCategory = (state: {
+	expenses: ExpenseState;
+}) => {
+	const expenses = state.expenses.expenses;
+	const totalsByCategory: { [key: string]: number } = {};
+
+	expenses.forEach((expense) => {
+		if (!totalsByCategory[expense.category]) {
+			totalsByCategory[expense.category] = 0;
+		}
+		totalsByCategory[expense.category] += expense.amountInBaseCurrency;
+	});
+
+	return totalsByCategory;
+};
+
+// Selector for unique expense categories
+export const selectExpenseCategories = (state: { expenses: ExpenseState }) => {
+	const expenses = state.expenses.expenses;
+	const categories = new Set<string>();
+
+	expenses.forEach((expense) => {
+		categories.add(expense.category);
+	});
+
+	return Array.from(categories).sort();
+};
+
+// Selector for all expenses
+export const selectAllExpenses = (state: { expenses: ExpenseState }) => {
+	return state.expenses.expenses;
+};
+
+// Selector for expenses status
+export const selectExpensesStatus = (state: { expenses: ExpenseState }) => {
+	return state.expenses.status;
+};
+
 export default expenseSlice.reducer;

@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
-import { addExpense, editExpense } from '../features/expenses/expensesSlice';
-import { addNotification } from '../features/ui/uiSlice';
+import { addExpense, updateExpense } from '../store/slices/expensesSlice';
+import { addNotification } from '../store/slices/uiSlice';
 import {
 	getAccountCategories,
 	getSystemCategories,
@@ -30,10 +30,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 }) => {
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
-
+	const { status } = useSelector((state: RootState) => state.expenses);
 	const { currentAccount } = useSelector((state: RootState) => state.accounts);
 	const { user } = useSelector((state: RootState) => state.auth);
-	const { isLoading } = useSelector((state: RootState) => state.expenses);
 
 	// Form state
 	const [amount, setAmount] = useState(
@@ -255,31 +254,27 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 					? exchangeRates[currency] || 1
 					: 1;
 
-			const expenseData: Partial<Expense> = {
+			const expenseData = {
 				accountId: currentAccount.id,
-				amount: convertedAmount, // Amount in base currency
-				originalAmount: numericAmount, // Original amount in selected currency
-				originalCurrency: currency,
-				exchangeRate,
+				amount: convertedAmount,
 				category,
-				subcategory: subcategory || undefined,
-				date: new Date(date),
 				description,
-				notes: notes || undefined,
-				isRecurring,
-				receiptUrls: allReceiptUrls.length > 0 ? allReceiptUrls : undefined,
-				createdBy: user.id,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				status: 'approved', // Auto-approve for now
+				date: new Date(date),
+				currency,
+				exchangeRate,
+				userId: user.firebaseUser.uid,
+				userDisplayName: user.firebaseUser.displayName || 'Unknown User',
+				receiptFile: receiptFiles.length > 0 ? receiptFiles[0] : undefined,
 			};
 
 			if (isEditMode && existingExpense) {
 				// Update existing expense
 				await dispatch(
-					editExpense({
-						expenseId: existingExpense.id,
+					updateExpense({
+						id: existingExpense.id,
 						updates: expenseData,
+						receiptFile: receiptFiles.length > 0 ? receiptFiles[0] : undefined,
+						deleteReceipt: receiptFiles.length === 0 ? true : undefined,
 					})
 				).unwrap();
 
@@ -689,9 +684,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 							</button>
 							<button
 								type='submit'
-								disabled={isLoading || isUploadingReceipts}
+								disabled={status === 'loading' || isUploadingReceipts}
 								className='ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed dark:bg-blue-700 dark:hover:bg-blue-800'>
-								{(isLoading || isUploadingReceipts) && (
+								{(status === 'loading' || isUploadingReceipts) && (
 									<svg
 										className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
 										xmlns='http://www.w3.org/2000/svg'

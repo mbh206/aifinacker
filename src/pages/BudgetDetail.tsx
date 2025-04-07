@@ -5,13 +5,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
 	fetchBudget,
-	fetchBudgetStatus,
+	selectSelectedBudget,
 	selectBudgetStatus,
-	removeBudget,
-} from '../features/budgets/budgetsSlice';
-import { addNotification } from '../features/ui/uiSlice';
-import { selectCurrentAccount } from '../features/accounts/accountsSlice';
+	deleteBudget as removeBudget,
+} from '../store/slices/budgetsSlice';
+import { addNotification } from '../store/slices/uiSlice';
+import { selectCurrentAccount } from '../store/slices/accountsSlice';
 import { RootState, AppDispatch } from '../store';
+import { Budget, Expense } from '../types';
 
 // Components
 import LoadingScreen from '../components/common/LoadingScreen';
@@ -33,14 +34,24 @@ import {
 	CartesianGrid,
 } from 'recharts';
 
+// Extended Budget type with additional properties
+interface ExtendedBudget extends Budget {
+	name: string;
+	notes?: string;
+	period?: string;
+	expenses: Expense[];
+}
+
 const BudgetDetail: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
 
-	const { isLoading, error } = useSelector((state: RootState) => state.budgets);
+	const { status, error } = useSelector((state: RootState) => state.budgets);
 	const currentAccount = useSelector(selectCurrentAccount);
-	const budgetStatus = useSelector(selectBudgetStatus);
+	const selectedBudget = useSelector(
+		selectSelectedBudget
+	) as ExtendedBudget | null;
 
 	const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>(
 		'overview'
@@ -51,7 +62,6 @@ const BudgetDetail: React.FC = () => {
 	useEffect(() => {
 		if (id && currentAccount) {
 			dispatch(fetchBudget(id));
-			dispatch(fetchBudgetStatus(id));
 		}
 	}, [dispatch, id, currentAccount]);
 
@@ -88,12 +98,9 @@ const BudgetDetail: React.FC = () => {
 	};
 
 	// Format date range
-	const formatDateRange = (startDate: string, endDate: string): string => {
+	const formatDateRange = (start: Date, end: Date): string => {
 		try {
-			return `${format(new Date(startDate), 'MMM d, yyyy')} - ${format(
-				new Date(endDate),
-				'MMM d, yyyy'
-			)}`;
+			return `${format(start, 'MMM d, yyyy')} - ${format(end, 'MMM d, yyyy')}`;
 		} catch (e) {
 			return 'Invalid date range';
 		}
@@ -101,10 +108,10 @@ const BudgetDetail: React.FC = () => {
 
 	// Get status badge color and text
 	const getStatusBadge = () => {
-		if (!budgetStatus?.budget) return { color: 'gray', text: 'Unknown' };
+		if (!selectedBudget) return { color: 'gray', text: 'Unknown' };
 
-		const percentUsed = (budgetStatus.spent / budgetStatus.budget.amount) * 100;
-		const isActive = new Date(budgetStatus.budget.endDate) >= new Date();
+		const percentUsed = (spent / selectedBudget.amount) * 100;
+		const isActive = new Date(selectedBudget.endDate) >= new Date();
 
 		if (!isActive) {
 			return { color: 'gray', text: 'Expired' };
@@ -121,12 +128,12 @@ const BudgetDetail: React.FC = () => {
 
 	// Prepare chart data
 	const getCategoryData = () => {
-		if (!budgetStatus?.expenses) return [];
+		if (!selectedBudget) return [];
 
 		// Group expenses by category
 		const categoryMap: Record<string, number> = {};
 
-		budgetStatus.expenses.forEach((expense) => {
+		selectedBudget.expenses.forEach((expense) => {
 			if (!categoryMap[expense.category]) {
 				categoryMap[expense.category] = 0;
 			}
@@ -169,7 +176,7 @@ const BudgetDetail: React.FC = () => {
 					<p className='font-medium'>{data.name}</p>
 					<p className='text-sm'>
 						<span className='font-medium'>{formatCurrency(data.value)}</span> (
-						{((data.value / budgetStatus!.spent) * 100).toFixed(1)}%)
+						{((data.value / selectedBudget!.amount) * 100).toFixed(1)}%)
 					</p>
 				</div>
 			);
@@ -177,7 +184,7 @@ const BudgetDetail: React.FC = () => {
 		return null;
 	};
 
-	if (isLoading || !budgetStatus?.budget) {
+	if (status === 'loading' || !selectedBudget) {
 		return <LoadingScreen />;
 	}
 
@@ -197,7 +204,14 @@ const BudgetDetail: React.FC = () => {
 		);
 	}
 
-	const { budget, spent, remaining, percentUsed, expenses } = budgetStatus;
+	const budget = selectedBudget;
+	const spent = budget.expenses.reduce(
+		(total, expense) => total + expense.amount,
+		0
+	);
+	const remaining = budget.amount - spent;
+	const percentUsed = (spent / budget.amount) * 100;
+	const { expenses } = budget;
 	const categoryData = getCategoryData();
 	const statusBadge = getStatusBadge();
 
@@ -211,7 +225,10 @@ const BudgetDetail: React.FC = () => {
 							{budget.name}
 						</h1>
 						<p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-							{formatDateRange(budget.startDate, budget.endDate)}
+							{formatDateRange(
+								new Date(budget.startDate),
+								new Date(budget.endDate)
+							)}
 						</p>
 					</div>
 
@@ -576,9 +593,9 @@ const BudgetDetail: React.FC = () => {
 				message={`Are you sure you want to delete the "${budget.name}" budget? This action cannot be undone.`}
 				confirmText='Delete'
 				cancelText='Cancel'
-				confirmButtonClass='bg-red-600 hover:bg-red-700'
+				variant='destructive'
 				onConfirm={handleDeleteBudget}
-				onCancel={() => setShowDeleteConfirm(false)}
+				onClose={() => setShowDeleteConfirm(false)}
 			/>
 		</div>
 	);

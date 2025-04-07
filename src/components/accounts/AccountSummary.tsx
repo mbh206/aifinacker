@@ -199,3 +199,5 @@ export const AccountSummary: React.FC = () => {
 		</div>
 	);
 };
+
+export default AccountSummary;

@@ -5,8 +5,8 @@ import { format } from 'date-fns';
 import {
 	fetchExpenses,
 	selectAllExpenses,
-	selectExpensesStatus,
-	selectExpensesError,
+	selectExpenseStatus,
+	selectExpenseError,
 	deleteExpense,
 } from '../store/slices/expensesSlice';
 import { selectCurrentAccount } from '../store/slices/accountsSlice';
@@ -31,8 +31,8 @@ const ExpenseList = () => {
 	const navigate = useNavigate();
 
 	const expenses = useSelector(selectAllExpenses);
-	const status = useSelector(selectExpensesStatus);
-	const error = useSelector(selectExpensesError);
+	const status = useSelector(selectExpenseStatus);
+	const error = useSelector(selectExpenseError);
 	const currentAccount = useSelector(selectCurrentAccount);
 	const filters = useSelector(selectFilters);
 

@@ -6,7 +6,7 @@ import {
 	registerUser,
 	loginWithGoogle,
 	clearError,
-} from '../../features/auth/authSlice';
+} from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store';
 
 const Register: React.FC = () => {

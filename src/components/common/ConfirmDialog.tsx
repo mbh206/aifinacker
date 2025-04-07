@@ -107,3 +107,5 @@ export const useConfirmDialog = () => {
 		closeDialog,
 	};
 };
+
+export default ConfirmDialog;

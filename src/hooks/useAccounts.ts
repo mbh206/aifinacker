@@ -12,8 +12,8 @@ import {
 	updateMemberRole,
 	setCurrentAccount,
 	clearCurrentAccount,
-} from '../features/accounts/accountsSlice';
-import { addNotification } from '../features/ui/uiSlice';
+} from '../store/slices/accountsSlice';
+import { addNotification } from '../store/slices/uiSlice';
 import { Account, AccountMember } from '../models/types';
 
 /**

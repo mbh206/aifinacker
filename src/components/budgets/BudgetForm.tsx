@@ -7,10 +7,10 @@ import {
 	addBudget,
 	editBudget,
 	fetchBudget,
-} from '../../features/budgets/budgetsSlice';
-import { selectExpenseCategories } from '../../features/expenses/expensesSlice';
-import { selectCurrentAccount } from '../../features/accounts/accountsSlice';
-import { addNotification } from '../../features/ui/uiSlice';
+} from '../../store/slices/budgetsSlice';
+import { selectExpenseCategories } from '../../store/slices/expensesSlice';
+import { selectCurrentAccount } from '../../store/slices/accountsSlice';
+import { addNotification } from '../../store/slices/uiSlice';
 import { RootState, AppDispatch } from '../../store';
 
 // Components

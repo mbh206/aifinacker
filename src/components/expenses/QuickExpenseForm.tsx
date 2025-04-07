@@ -220,3 +220,5 @@ export const QuickExpenseForm: React.FC = () => {
 		</div>
 	);
 };
+
+export default QuickExpenseForm;

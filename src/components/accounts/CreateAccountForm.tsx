@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
-import { createNewAccount } from '../../features/accounts/accountsSlice';
-import { addNotification } from '../../features/ui/uiSlice';
+import { createAccount } from '../../store/slices/accountsSlice';
+import { addNotification } from '../../store/slices/uiSlice';
 import { getSupportedCurrencies } from '../../services/api';
+import { User } from '../../models/types';
 
 const accountTypes = [
 	{ id: 'personal', name: 'Personal' },
@@ -20,14 +21,19 @@ interface Currency {
 	symbol: string;
 }
 
+// User interface for Redux state
+interface AuthUser {
+	id: string;
+	email: string;
+	displayName: string;
+}
+
 const CreateAccountForm: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
 
 	const { user } = useSelector((state: RootState) => state.auth);
-	const { isLoading, error } = useSelector(
-		(state: RootState) => state.accounts
-	);
+	const { status, error } = useSelector((state: RootState) => state.accounts);
 
 	const [name, setName] = useState('');
 	const [type, setType] = useState<'personal' | 'family' | 'team' | 'business'>(
@@ -71,31 +77,16 @@ const CreateAccountForm: React.FC = () => {
 
 		try {
 			// Create the new account
-			const newAccount = {
+			const accountData = {
 				name,
-				type,
 				description,
 				baseCurrency,
-				ownerId: user.id,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				members: [
-					{
-						userId: user.id,
-						role: 'admin' as const,
-						joinedAt: new Date(),
-						invitedBy: user.id,
-					},
-				],
-				settings: {
-					defaultCategories: [],
-					fiscalYearStart: 1, // January
-					weekStart: 0, // Sunday
-					expenseApprovalRequired: false,
-				},
+				userId: user.firebaseUser.uid,
+				userEmail: user.firebaseUser.email || '',
+				userDisplayName: user.firebaseUser.displayName || 'User',
 			};
 
-			await dispatch(createNewAccount(newAccount)).unwrap();
+			await dispatch(createAccount(accountData)).unwrap();
 
 			// Show success notification
 			dispatch(
@@ -286,9 +277,9 @@ const CreateAccountForm: React.FC = () => {
 							</button>
 							<button
 								type='submit'
-								disabled={isLoading || isLoadingCurrencies}
+								disabled={status === 'loading' || isLoadingCurrencies}
 								className='ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed dark:bg-blue-700 dark:hover:bg-blue-800'>
-								{isLoading ? (
+								{status === 'loading' ? (
 									<svg
 										className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
 										xmlns='http://www.w3.org/2000/svg'

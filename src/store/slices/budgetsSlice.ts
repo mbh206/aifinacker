@@ -13,31 +13,32 @@ import {
 	Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import { Budget as BaseBudget, Expense } from '../../types';
 
-// Types
-export interface Budget {
-	id: string;
+// Extended Budget type with additional properties for the slice
+export interface ExtendedBudget extends BaseBudget {
 	accountId: string;
 	name: string;
-	amount: number;
-	category: string | null; // null means all categories
-	startDate: Date;
-	endDate: Date;
-	createdAt: Date;
+	isRecurring: boolean;
+	recurringPeriod?: 'weekly' | 'monthly' | 'quarterly' | 'annually';
+	isActive: boolean;
+	notes?: string;
 	createdBy: {
 		uid: string;
 		displayName: string;
 	};
-	notes?: string;
-	isRecurring: boolean;
-	recurringPeriod?: 'weekly' | 'monthly' | 'quarterly' | 'annually';
-	isActive: boolean;
+	expenses: Array<{
+		id: string;
+		category: string;
+		amount: number;
+		date: Date;
+	}>;
 }
 
 interface BudgetState {
-	budgets: Budget[];
-	activeBudgets: Budget[];
-	selectedBudget: Budget | null;
+	budgets: ExtendedBudget[];
+	activeBudgets: ExtendedBudget[];
+	selectedBudget: ExtendedBudget | null;
 	status: 'idle' | 'loading' | 'succeeded' | 'failed';
 	error: string | null;
 }
@@ -51,7 +52,7 @@ const initialState: BudgetState = {
 };
 
 // Helper function to convert Firestore timestamp to Date
-const convertTimestamps = (budget: any): Budget => {
+const convertTimestamps = (budget: any): ExtendedBudget => {
 	return {
 		...budget,
 		startDate:
@@ -66,11 +67,15 @@ const convertTimestamps = (budget: any): Budget => {
 			budget.createdAt instanceof Timestamp
 				? budget.createdAt.toDate()
 				: budget.createdAt,
+		updatedAt:
+			budget.updatedAt instanceof Timestamp
+				? budget.updatedAt.toDate()
+				: budget.updatedAt,
 	};
 };
 
 // Helper function to filter active budgets
-const filterActiveBudgets = (budgets: Budget[]): Budget[] => {
+const filterActiveBudgets = (budgets: ExtendedBudget[]): ExtendedBudget[] => {
 	const now = new Date();
 	return budgets.filter(
 		(budget) =>
@@ -98,7 +103,7 @@ export const createBudget = createAsyncThunk(
 			accountId: string;
 			name: string;
 			amount: number;
-			category: string | null;
+			category: string;
 			startDate: Date;
 			endDate: Date;
 			userId: string;
@@ -111,14 +116,15 @@ export const createBudget = createAsyncThunk(
 	) => {
 		try {
 			// Create budget document
-			const budgetData = {
+			const budgetData: Omit<ExtendedBudget, 'id'> = {
 				accountId,
 				name,
 				amount,
-				category,
+				category: category || 'All',
 				startDate,
 				endDate,
 				createdAt: new Date(),
+				updatedAt: new Date(),
 				createdBy: {
 					uid: userId,
 					displayName: userDisplayName,
@@ -127,13 +133,15 @@ export const createBudget = createAsyncThunk(
 				isRecurring,
 				recurringPeriod: isRecurring ? recurringPeriod : undefined,
 				isActive: true,
+				userId,
+				expenses: [],
 			};
 
 			const docRef = await addDoc(collection(db, 'budgets'), budgetData);
 
 			return {
-				id: docRef.id,
 				...budgetData,
+				id: docRef.id,
 			};
 		} catch (error: any) {
 			return rejectWithValue(error.message);
@@ -152,7 +160,7 @@ export const fetchBudgets = createAsyncThunk(
 			);
 
 			const querySnapshot = await getDocs(q);
-			const budgets: Budget[] = [];
+			const budgets: ExtendedBudget[] = [];
 
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
@@ -180,7 +188,7 @@ export const updateBudget = createAsyncThunk(
 		}: {
 			id: string;
 			updates: Partial<
-				Omit<Budget, 'id' | 'accountId' | 'createdAt' | 'createdBy'>
+				Omit<ExtendedBudget, 'id' | 'accountId' | 'createdAt' | 'createdBy'>
 			>;
 		},
 		{ getState, rejectWithValue }
@@ -197,10 +205,10 @@ export const updateBudget = createAsyncThunk(
 			}
 
 			return {
-				id,
 				...currentBudget,
 				...updates,
-			};
+				id,
+			} as ExtendedBudget;
 		} catch (error: any) {
 			return rejectWithValue(error.message);
 		}
@@ -215,6 +223,64 @@ export const deleteBudget = createAsyncThunk(
 			await deleteDoc(doc(db, 'budgets', id));
 
 			return id;
+		} catch (error: any) {
+			return rejectWithValue(error.message);
+		}
+	}
+);
+
+export const fetchBudget = createAsyncThunk(
+	'budgets/fetchBudget',
+	async (budgetId: string, { rejectWithValue }) => {
+		try {
+			// Get the budget document
+			const budgetDoc = await getDoc(doc(db, 'budgets', budgetId));
+			if (!budgetDoc.exists()) {
+				return rejectWithValue('Budget not found');
+			}
+
+			// Get expenses for this budget's period
+			const budgetData = budgetDoc.data();
+			const q = query(
+				collection(db, 'expenses'),
+				where('accountId', '==', budgetData.accountId),
+				where('date', '>=', budgetData.startDate),
+				where('date', '<=', budgetData.endDate)
+			);
+
+			const expensesSnapshot = await getDocs(q);
+			const expenses = expensesSnapshot.docs.map((doc) => {
+				const data = doc.data();
+				return {
+					id: doc.id,
+					category: data.category,
+					amount: data.amount,
+					date: data.date.toDate(),
+				};
+			});
+
+			// Ensure all required properties are included
+			const budget: ExtendedBudget = {
+				id: budgetDoc.id,
+				accountId: budgetData.accountId,
+				name: budgetData.name,
+				amount: budgetData.amount,
+				category: budgetData.category || 'All',
+				startDate: budgetData.startDate.toDate(),
+				endDate: budgetData.endDate.toDate(),
+				createdAt: budgetData.createdAt.toDate(),
+				updatedAt:
+					budgetData.updatedAt?.toDate() || budgetData.createdAt.toDate(),
+				createdBy: budgetData.createdBy,
+				notes: budgetData.notes,
+				isRecurring: budgetData.isRecurring,
+				recurringPeriod: budgetData.recurringPeriod,
+				isActive: budgetData.isActive,
+				userId: budgetData.userId,
+				expenses,
+			};
+
+			return budget;
 		} catch (error: any) {
 			return rejectWithValue(error.message);
 		}
@@ -277,11 +343,11 @@ const budgetSlice = createSlice({
 			state.status = 'succeeded';
 			const index = state.budgets.findIndex((b) => b.id === action.payload.id);
 			if (index !== -1) {
-				state.budgets[index] = action.payload as Budget;
+				state.budgets[index] = action.payload as ExtendedBudget;
 			}
 			state.activeBudgets = filterActiveBudgets(state.budgets);
 			if (state.selectedBudget?.id === action.payload.id) {
-				state.selectedBudget = action.payload as Budget;
+				state.selectedBudget = action.payload as ExtendedBudget;
 			}
 			state.error = null;
 		});
@@ -307,9 +373,45 @@ const budgetSlice = createSlice({
 			state.status = 'failed';
 			state.error = action.payload as string;
 		});
+
+		// Fetch budget
+		builder.addCase(fetchBudget.pending, (state) => {
+			state.status = 'loading';
+		});
+		builder.addCase(fetchBudget.fulfilled, (state, action) => {
+			state.status = 'succeeded';
+			const index = state.budgets.findIndex((b) => b.id === action.payload.id);
+			if (index !== -1) {
+				state.budgets[index] = action.payload;
+			} else {
+				state.budgets.push(action.payload);
+			}
+			state.selectedBudget = action.payload;
+			state.error = null;
+		});
+		builder.addCase(fetchBudget.rejected, (state, action) => {
+			state.status = 'failed';
+			state.error = action.payload as string;
+		});
 	},
 });
 
 export const { setSelectedBudget, clearBudgets } = budgetSlice.actions;
+
+// Selectors
+export const selectBudgetStatus = (state: { budgets: BudgetState }) =>
+	state.budgets.status;
+export const selectBudgets = (state: { budgets: BudgetState }) =>
+	state.budgets.budgets;
+export const selectActiveBudgets = (state: { budgets: BudgetState }) =>
+	state.budgets.activeBudgets;
+export const selectSelectedBudget = (state: { budgets: BudgetState }) =>
+	state.budgets.selectedBudget;
+export const selectBudgetError = (state: { budgets: BudgetState }) =>
+	state.budgets.error;
+export const selectBudgetById = (
+	state: { budgets: BudgetState },
+	budgetId: string
+) => state.budgets.budgets.find((budget) => budget.id === budgetId);
 
 export default budgetSlice.reducer;

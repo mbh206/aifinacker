@@ -3,7 +3,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import { RootState, AppDispatch } from '../../store';
-import { dismissNotification } from '../../features/ui/uiSlice';
+import { hideNotification } from '../../store/slices/uiSlice';
 
 const Notification: React.FC<{
 	id: string;
@@ -139,7 +139,7 @@ const Notifications: React.FC = () => {
 
 	// Handle dismissing a notification
 	const handleDismiss = (id: string) => {
-		dispatch(dismissNotification(id));
+		dispatch(hideNotification(id));
 	};
 
 	if (activeNotifications.length === 0) {

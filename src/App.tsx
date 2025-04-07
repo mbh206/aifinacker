@@ -13,10 +13,10 @@ import {
 	checkAuth,
 } from './store/slices/authSlice';
 import {
-	fetchAccounts,
+	fetchUserAccounts,
 	selectCurrentAccount,
 } from './store/slices/accountsSlice';
-import { selectNotifications, hideNotification } from './store/slices/uiSlice';
+import { selectNotifications } from './store/slices/uiSlice';
 
 // Layouts
 import AppLayout from './components/layout/AppLayout';
@@ -31,22 +31,22 @@ import ResetPassword from './pages/auth/ResetPassword';
 // Main App Pages
 import Dashboard from './pages/Dashboard';
 import ExpenseList from './pages/ExpenseList';
-import ExpenseDetail from './pages/ExpenseDetail';
+import { ExpenseDetails } from './pages/ExpenseDetail';
 import ExpenseForm from './pages/ExpenseForm';
 import BudgetList from './pages/BudgetList';
 import BudgetDetail from './pages/BudgetDetail';
 import BudgetForm from './pages/BudgetForm';
 import Insights from './pages/Insights';
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
-import AccountList from './pages/AccountList';
-import AccountDetail from './pages/AccountDetail';
+import { Settings } from './pages/Settings';
+import { Profile } from './pages/Profile';
+import { AccountList } from './pages/AccountList';
+import { AccountDetail } from './pages/AccountDetail';
 import AccountForm from './pages/AccountForm';
 import NotFound from './pages/NotFound';
 
 // Components
 import LoadingScreen from './components/common/LoadingScreen';
-import Notification from './components/common/Notification';
+import Notifications from './components/common/Notification';
 
 const App = () => {
 	const dispatch = useDispatch();
@@ -55,37 +55,47 @@ const App = () => {
 	const currentAccount = useSelector(selectCurrentAccount);
 	const notifications = useSelector(selectNotifications);
 
+	// Log initial state
+	console.log('Initial state:', {
+		isAuthenticated,
+		currentUser,
+		currentAccount,
+		notifications,
+	});
+
 	// Check authentication status on app load
 	useEffect(() => {
-		dispatch(checkAuth());
+		console.log('Checking authentication status...');
+		dispatch(checkAuth() as any);
 	}, [dispatch]);
 
 	// Fetch accounts once authenticated
 	useEffect(() => {
+		console.log('Auth state:', { isAuthenticated, currentUser });
 		if (isAuthenticated && currentUser) {
-			dispatch(fetchAccounts());
+			console.log('Fetching accounts for user:', currentUser.firebaseUser.uid);
+			dispatch(fetchUserAccounts(currentUser.firebaseUser.uid) as any);
 		}
 	}, [dispatch, isAuthenticated, currentUser]);
 
-	// If auth is still being checked, show loading screen
+	// Log when loading screen is shown
 	if (isAuthenticated === null) {
+		console.log('Auth check in progress, showing loading screen...');
 		return <LoadingScreen />;
 	}
+
+	console.log('Rendering app with state:', {
+		isAuthenticated,
+		currentUser,
+		currentAccount,
+		notifications,
+	});
 
 	return (
 		<ThemeProvider>
 			<Router>
 				{/* Notifications */}
-				<div className='fixed top-0 right-0 z-50 p-4 space-y-2'>
-					{notifications.map((notification) => (
-						<Notification
-							key={notification.id}
-							type={notification.type}
-							message={notification.message}
-							onClose={() => dispatch(hideNotification(notification.id))}
-						/>
-					))}
-				</div>
+				<Notifications />
 
 				<Routes>
 					{/* Authentication Routes */}
@@ -165,7 +175,7 @@ const App = () => {
 									/>
 									<Route
 										path=':id'
-										element={<ExpenseDetail />}
+										element={<ExpenseDetails />}
 									/>
 									<Route
 										path=':id/edit'

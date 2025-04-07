@@ -5,20 +5,21 @@ import {
 	selectCurrentAccount,
 	selectAccounts,
 } from '../../store/slices/accountsSlice';
-import { selectUser, logout } from '../../store/slices/authSlice';
+import { selectUser, logoutUser } from '../../store/slices/authSlice';
 import {
 	toggleSidebar,
 	selectIsSidebarOpen,
 	toggleDarkMode,
 	selectIsDarkMode,
 } from '../../store/slices/uiSlice';
+import { AppDispatch } from '../../store';
 
 // Components
 import AccountSwitcher from '../accounts/AccountSwitcher';
 import LoadingScreen from '../common/LoadingScreen';
 
 const AppLayout = () => {
-	const dispatch = useDispatch();
+	const dispatch = useDispatch<AppDispatch>();
 	const location = useLocation();
 	const currentUser = useSelector(selectUser);
 	const currentAccount = useSelector(selectCurrentAccount);
@@ -37,7 +38,7 @@ const AppLayout = () => {
 
 	// Handle logout
 	const handleLogout = () => {
-		dispatch(logout());
+		dispatch(logoutUser());
 	};
 
 	// Handle dark mode toggle
@@ -119,9 +120,9 @@ const AppLayout = () => {
 									onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
 									className='flex items-center focus:outline-none'>
 									<div className='h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center'>
-										{currentUser?.displayName ? (
+										{currentUser?.firebaseUser?.displayName ? (
 											<span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-												{currentUser.displayName.charAt(0)}
+												{currentUser.firebaseUser.displayName.charAt(0)}
 											</span>
 										) : (
 											<svg
@@ -144,10 +145,10 @@ const AppLayout = () => {
 									<div className='absolute right-0 mt-2 w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-20 border border-gray-200 dark:border-gray-700'>
 										<div className='px-4 py-2 border-b border-gray-200 dark:border-gray-700'>
 											<p className='text-sm font-medium text-gray-900 dark:text-white'>
-												{currentUser?.displayName || 'User'}
+												{currentUser?.firebaseUser?.displayName || 'User'}
 											</p>
 											<p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-												{currentUser?.email}
+												{currentUser?.firebaseUser?.email}
 											</p>
 										</div>
 										<Link
@@ -287,9 +288,9 @@ const AppLayout = () => {
 							<div className='flex items-center'>
 								<div className='flex-shrink-0'>
 									<div className='h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center'>
-										{currentUser?.displayName ? (
+										{currentUser?.firebaseUser?.displayName ? (
 											<span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-												{currentUser.displayName.charAt(0)}
+												{currentUser.firebaseUser.displayName.charAt(0)}
 											</span>
 										) : (
 											<svg
@@ -309,10 +310,10 @@ const AppLayout = () => {
 								</div>
 								<div className='ml-3'>
 									<p className='text-sm font-medium text-gray-900 dark:text-white'>
-										{currentUser?.displayName || 'User'}
+										{currentUser?.firebaseUser?.displayName || 'User'}
 									</p>
 									<p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-										{currentUser?.email}
+										{currentUser?.firebaseUser?.email}
 									</p>
 								</div>
 							</div>
@@ -501,9 +502,9 @@ const AppLayout = () => {
 										onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
 										className='flex items-center focus:outline-none'>
 										<div className='h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center'>
-											{currentUser?.displayName ? (
+											{currentUser?.firebaseUser?.displayName ? (
 												<span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-													{currentUser.displayName.charAt(0)}
+													{currentUser.firebaseUser.displayName.charAt(0)}
 												</span>
 											) : (
 												<svg
@@ -526,10 +527,10 @@ const AppLayout = () => {
 										<div className='absolute right-0 mt-2 w-48 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-20 border border-gray-200 dark:border-gray-700'>
 											<div className='px-4 py-2 border-b border-gray-200 dark:border-gray-700'>
 												<p className='text-sm font-medium text-gray-900 dark:text-white'>
-													{currentUser?.displayName || 'User'}
+													{currentUser?.firebaseUser?.displayName || 'User'}
 												</p>
 												<p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-													{currentUser?.email}
+													{currentUser?.firebaseUser?.email}
 												</p>
 											</div>
 											<Link

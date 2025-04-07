@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { resetPassword } from '../../services/auth';
-import { addNotification } from '../../features/ui/uiSlice';
+import { addNotification } from '../../store/slices/uiSlice';
 
 const validationSchema = Yup.object({
 	email: Yup.string()

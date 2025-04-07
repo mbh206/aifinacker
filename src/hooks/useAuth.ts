@@ -14,7 +14,7 @@ import {
 	selectIsAuthenticated,
 	selectIsLoading,
 	selectError,
-} from '../features/auth/authSlice';
+} from '../store/slices/authSlice';
 
 /**
  * Custom hook for authentication functionality

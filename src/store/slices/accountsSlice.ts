@@ -202,7 +202,7 @@ export const setCurrentAccount = createAsyncThunk(
 	}
 );
 
-const accountSlice = createSlice({
+const accountsSlice = createSlice({
 	name: 'accounts',
 	initialState,
 	reducers: {
@@ -262,5 +262,17 @@ const accountSlice = createSlice({
 	},
 });
 
-export const { clearAccounts } = accountSlice.actions;
-export default accountSlice.reducer;
+// Export actions
+export const { clearAccounts } = accountsSlice.actions;
+
+// Export selectors
+export const selectAccounts = (state: { accounts: AccountState }) =>
+	state.accounts.accounts;
+export const selectCurrentAccount = (state: { accounts: AccountState }) =>
+	state.accounts.currentAccount;
+export const selectAccountsStatus = (state: { accounts: AccountState }) =>
+	state.accounts.status;
+export const selectAccountsError = (state: { accounts: AccountState }) =>
+	state.accounts.error;
+
+export default accountsSlice.reducer;

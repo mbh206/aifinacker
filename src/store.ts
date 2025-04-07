@@ -1,10 +1,10 @@
 // src/store.ts
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './features/auth/authSlice';
-import accountsReducer from './features/accounts/accountsSlice';
-import expensesReducer from './features/expenses/expensesSlice';
-import budgetsReducer from './features/budgets/budgetsSlice';
-import uiReducer from './features/ui/uiSlice';
+import authReducer from './store/slices/authSlice';
+import accountsReducer from './store/slices/accountsSlice';
+import expensesReducer from './store/slices/expensesSlice';
+import budgetsReducer from './store/slices/budgetsSlice';
+import uiReducer from './store/slices/uiSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -39,7 +39,7 @@ export const store = configureStore({
 				],
 			},
 		}),
-	devTools: process.env.NODE_ENV !== 'production',
+	devTools: import.meta.env.DEV,
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

@@ -83,6 +83,10 @@ const uiSlice = createSlice({
 			state.theme = action.payload;
 			applyTheme(action.payload);
 		},
+		toggleDarkMode: (state) => {
+			state.theme = state.theme === 'dark' ? 'light' : 'dark';
+			applyTheme(state.theme);
+		},
 		toggleSidebar: (state) => {
 			state.sidebarOpen = !state.sidebarOpen;
 		},
@@ -141,6 +145,7 @@ const uiSlice = createSlice({
 export const {
 	initializeTheme,
 	setTheme,
+	toggleDarkMode,
 	toggleSidebar,
 	setSidebarOpen,
 	toggleMobileMenu,
@@ -157,7 +162,7 @@ export const {
 
 // Selectors
 export const selectTheme = (state: { ui: UiState }) => state.ui.theme;
-export const selectSidebarOpen = (state: { ui: UiState }) =>
+export const selectIsSidebarOpen = (state: { ui: UiState }) =>
 	state.ui.sidebarOpen;
 export const selectMobileMenuOpen = (state: { ui: UiState }) =>
 	state.ui.mobileMenuOpen;
@@ -165,5 +170,25 @@ export const selectActiveView = (state: { ui: UiState }) => state.ui.activeView;
 export const selectNotifications = (state: { ui: UiState }) =>
 	state.ui.notifications;
 export const selectFilters = (state: { ui: UiState }) => state.ui.filters;
+
+// Add selector for dark mode
+export const selectIsDarkMode = (state: { ui: UiState }) => {
+	const theme = state.ui.theme;
+	if (theme === 'dark') return true;
+	if (theme === 'light') return false;
+	// For 'system' theme, check system preference
+	return (
+		typeof window !== 'undefined' &&
+		window.matchMedia('(prefers-color-scheme: dark)').matches
+	);
+};
+
+// Helper function to show notifications
+export const showNotification = (
+	type: 'success' | 'error' | 'info' | 'warning',
+	message: string
+) => {
+	return addNotification({ type, message });
+};
 
 export default uiSlice.reducer;

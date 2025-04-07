@@ -22,7 +22,9 @@ import {
 	serverTimestamp,
 	DocumentReference,
 	QuerySnapshot,
+	limit,
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Firebase configuration interface
 interface FirebaseConfig {
@@ -70,14 +72,37 @@ export interface Account {
  */
 class FirebaseService {
 	private app;
-	private auth;
-	private db;
+	public auth;
+	public db;
+	public storage;
+	private static instance: FirebaseService;
 
 	constructor(config: FirebaseConfig) {
-		// Initialize Firebase
-		this.app = initializeApp(config);
-		this.auth = getAuth(this.app);
-		this.db = getFirestore(this.app);
+		try {
+			// Validate config
+			if (!config.apiKey || !config.authDomain || !config.projectId) {
+				throw new Error('Missing required Firebase configuration');
+			}
+
+			// Initialize Firebase
+			this.app = initializeApp(config);
+			this.auth = getAuth(this.app);
+			this.db = getFirestore(this.app);
+			this.storage = getStorage(this.app);
+
+			console.log('Firebase initialized successfully');
+		} catch (error) {
+			console.error('Firebase initialization error:', error);
+			throw error;
+		}
+	}
+
+	// Get singleton instance
+	public static getInstance(config?: FirebaseConfig): FirebaseService {
+		if (!FirebaseService.instance && config) {
+			FirebaseService.instance = new FirebaseService(config);
+		}
+		return FirebaseService.instance;
 	}
 
 	// Authentication Methods
@@ -266,15 +291,64 @@ class FirebaseService {
 	}
 }
 
-// Firebase configuration (replace with your actual config)
-const firebaseConfig = {
-	apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-	authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-	projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-	storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-	messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-	appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+// Export a singleton instance of FirebaseService
+const firebaseConfig: FirebaseConfig = {
+	apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
+	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
+	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string,
+	storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string,
+	messagingSenderId: import.meta.env
+		.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
+	appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
 
-// Export a singleton instance of FirebaseService
-export const firebaseService = new FirebaseService(firebaseConfig);
+// Validate environment variables
+const requiredEnvVars = [
+	'VITE_FIREBASE_API_KEY',
+	'VITE_FIREBASE_AUTH_DOMAIN',
+	'VITE_FIREBASE_PROJECT_ID',
+	'VITE_FIREBASE_STORAGE_BUCKET',
+	'VITE_FIREBASE_MESSAGING_SENDER_ID',
+	'VITE_FIREBASE_APP_ID',
+];
+
+const missingEnvVars = requiredEnvVars.filter(
+	(varName) => !import.meta.env[varName]
+);
+
+if (missingEnvVars.length > 0) {
+	throw new Error(
+		`Missing required environment variables: ${missingEnvVars.join(', ')}`
+	);
+}
+
+console.log('Initializing Firebase with config:', {
+	apiKey: firebaseConfig.apiKey ? '***' : 'missing',
+	authDomain: firebaseConfig.authDomain,
+	projectId: firebaseConfig.projectId,
+	storageBucket: firebaseConfig.storageBucket,
+	messagingSenderId: firebaseConfig.messagingSenderId ? '***' : 'missing',
+	appId: firebaseConfig.appId ? '***' : 'missing',
+});
+
+export const firebaseService = FirebaseService.getInstance(firebaseConfig);
+
+// Export the db instance
+export const db = firebaseService.db;
+export const storage = firebaseService.storage;
+export const auth = firebaseService.auth;
+
+// Add a function to check if Firestore is properly initialized
+export const checkFirestoreConnection = async () => {
+	try {
+		console.log('Checking Firestore connection...');
+		const testCollection = collection(db, 'test');
+		const testQuery = query(testCollection, limit(1));
+		const snapshot = await getDocs(testQuery);
+		console.log('Firestore connection successful:', snapshot.size);
+		return true;
+	} catch (error) {
+		console.error('Firestore connection error:', error);
+		return false;
+	}
+};
